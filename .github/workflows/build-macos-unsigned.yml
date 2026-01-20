@@ -1,0 +1,122 @@
+name: Build macOS Apps (Unsigned)
+
+on:
+  workflow_dispatch:
+    inputs:
+      build_target:
+        description: 'Build target'
+        required: true
+        default: 'both'
+        type: choice
+        options:
+          - both
+          - teacher
+          - student
+
+jobs:
+  build:
+    name: Build macOS Apps
+    runs-on: macos-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-darwin,x86_64-apple-darwin
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: './src-tauri -> target'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build mediasoup-server
+        run: |
+          cd mediasoup-server
+          npm ci
+          npm run build
+
+      - name: Build Teacher App
+        if: ${{ github.event.inputs.build_target == 'teacher' || github.event.inputs.build_target == 'both' }}
+        run: |
+          echo "Building Teacher App..."
+          npm run build
+          npm run tauri build -- --target universal-apple-darwin
+
+      - name: Build Student App
+        if: ${{ github.event.inputs.build_target == 'student' || github.event.inputs.build_target == 'both' }}
+        run: |
+          echo "Building Student App..."
+          npm run build:student
+          npm run tauri build -- --config src-tauri/tauri.student.conf.json --target universal-apple-darwin
+
+      - name: Rename and organize artifacts
+        run: |
+          mkdir -p ./artifacts/teacher ./artifacts/student
+          
+          # Teacher artifacts
+          if [ -d "src-tauri/target/universal-apple-darwin/release/bundle/dmg" ]; then
+            find src-tauri/target/universal-apple-darwin/release/bundle/dmg -name "*Teacher*.dmg" -exec cp {} ./artifacts/teacher/ \;
+          fi
+          
+          # Student artifacts  
+          if [ -d "src-tauri/target/universal-apple-darwin/release/bundle/dmg" ]; then
+            find src-tauri/target/universal-apple-darwin/release/bundle/dmg -name "*Student*.dmg" -exec cp {} ./artifacts/student/ \;
+          fi
+          
+          # List artifacts
+          echo "=== Teacher Artifacts ==="
+          ls -lh ./artifacts/teacher/ || echo "No teacher artifacts"
+          echo "=== Student Artifacts ==="
+          ls -lh ./artifacts/student/ || echo "No student artifacts"
+
+      - name: Upload Teacher App
+        if: ${{ github.event.inputs.build_target == 'teacher' || github.event.inputs.build_target == 'both' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ScreenSharing-Teacher-macOS-Universal
+          path: ./artifacts/teacher/*.dmg
+          if-no-files-found: error
+
+      - name: Upload Student App
+        if: ${{ github.event.inputs.build_target == 'student' || github.event.inputs.build_target == 'both' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ScreenSharing-Student-macOS-Universal
+          path: ./artifacts/student/*.dmg
+          if-no-files-found: error
+
+      - name: Generate build info
+        run: |
+          echo "# Build Information" > build-info.txt
+          echo "" >> build-info.txt
+          echo "Build Date: $(date)" >> build-info.txt
+          echo "Commit: ${{ github.sha }}" >> build-info.txt
+          echo "Branch: ${{ github.ref_name }}" >> build-info.txt
+          echo "Target: ${{ github.event.inputs.build_target }}" >> build-info.txt
+          echo "" >> build-info.txt
+          echo "## Installation Instructions" >> build-info.txt
+          echo "" >> build-info.txt
+          echo "These apps are UNSIGNED. To install:" >> build-info.txt
+          echo "1. Download and mount the DMG file" >> build-info.txt
+          echo "2. Drag the app to Applications folder" >> build-info.txt
+          echo "3. Right-click the app and select 'Open' (first time only)" >> build-info.txt
+          echo "   OR run: xattr -cr '/Applications/Screen Sharing Teacher.app'" >> build-info.txt
+          cat build-info.txt
+
+      - name: Upload build info
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-info
+          path: build-info.txt

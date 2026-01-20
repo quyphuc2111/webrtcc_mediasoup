@@ -36,7 +36,7 @@ export const config = {
         mimeType: 'video/VP8', // VP8 nhẹ hơn VP9/H264
         clockRate: 90000,
         parameters: {
-          'x-google-start-bitrate': 500000, // Start bitrate thấp
+          'x-google-start-bitrate': 3000000, // Start bitrate cao hơn cho chất lượng tốt (3Mbps)
         },
       },
       {
@@ -69,10 +69,10 @@ export const config = {
     enableUdp: true,
     enableTcp: true,
     preferUdp: true,
-    initialAvailableOutgoingBitrate: 600000, // 600kbps start
+    initialAvailableOutgoingBitrate: 5000000, // 5Mbps start - đủ cho 1080p chất lượng cao
   },
   
-  maxIncomingBitrate: 1500000, // Max 1.5Mbps incoming
+  maxIncomingBitrate: 8000000, // Max 8Mbps incoming - hỗ trợ 1080p@60fps
   
   // Tối ưu cho 30-50 clients
   maxClientsPerRoom: 50,

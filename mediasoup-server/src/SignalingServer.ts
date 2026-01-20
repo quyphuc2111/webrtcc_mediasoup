@@ -3,7 +3,6 @@ import type { IncomingMessage } from 'http';
 import type { RtpCapabilities, DtlsParameters, MediaKind, RtpParameters } from 'mediasoup/node/lib/types.js';
 import { MediasoupManager } from './MediasoupManager.js';
 import { config } from './config.js';
-import type { Peer } from './Room.js';
 
 interface SignalingMessage {
   type: string;

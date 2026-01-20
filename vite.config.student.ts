@@ -5,6 +5,7 @@ import { resolve } from "path";
 export default defineConfig({
   plugins: [react()],
   clearScreen: false,
+  publicDir: "public",
   server: {
     port: 1421,
     strictPort: true,

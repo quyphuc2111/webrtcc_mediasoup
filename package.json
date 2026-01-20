@@ -7,7 +7,7 @@
     "dev": "vite",
     "dev:student": "vite --config vite.config.student.ts",
     "build": "tsc && vite build",
-    "build:student": "tsc && vite build --config vite.config.student.ts index-student.html",
+    "build:student": "tsc && vite build --config vite.config.student.ts",
     "preview": "vite preview",
     "tauri": "tauri",
     "tauri:dev:student": "tauri dev --config src-tauri/tauri.student.conf.json",
